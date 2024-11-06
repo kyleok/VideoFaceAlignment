@@ -18,6 +18,7 @@ conda activate ffhqfacealignment
 
 # Install PyTorch (adjust URL based on your CUDA version)
 pip3 install torch torchvision --index-url https://download.pytorch.org/whl/cu118
+pip3 install -r requirements.txt
 ```
 
 
@@ -27,25 +28,26 @@ pip3 install torch torchvision --index-url https://download.pytorch.org/whl/cu11
 First, you need to download the pretrained SFD [1] model using
 
 ```bash
+# Download pretrained model, same as original repo
 python download.py
 ```
 
-Pretrained model download, same from [@chi0tzp/FFHQFaceAlignment](https://github.com/chi0tzp/FFHQFaceAlignment)
+
 
 ```bash
+# Same as original repo
 python align.py --input-dir=<directory of original images> --output-dir=<directory of cropped images> --size=<cropped image resolution>
 ```
-same from [@chi0tzp/FFHQFaceAlignment](https://github.com/chi0tzp/FFHQFaceAlignment)
 
 ```bash
+# Converts single video to cropped and aligned video
 python align_video.py --input path/to/input.mp4 --output path/to/output.mp4 --size 256
 ```
-converts single video to cropped and aligned video
 
 ```bash
+# Converts batch of videos in a dir. output dir follows same subdir structure of source dir.
 python align_video_dir.py --input path/to/source_dir --size 256
 ```
-converts batch of videos in a dir. output follows same dir structure of source dir.
 
 ## Credits
 
