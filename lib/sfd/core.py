@@ -73,7 +73,9 @@ class FaceDetector(object):
         """
         raise NotImplementedError
 
-    def detect_from_directory(self, path, extensions=['.jpg', '.png'], recursive=False, show_progress_bar=True):
+    def detect_from_directory(
+        self, path, extensions=[".jpg", ".png"], recursive=False, show_progress_bar=True
+    ):
         """Detects faces from all the images present in a given directory.
 
         Arguments:
@@ -102,10 +104,12 @@ class FaceDetector(object):
 
         if self.verbose:
             logger.info("Constructing the list of images.")
-        additional_pattern = '/**/*' if recursive else '/*'
+        additional_pattern = "/**/*" if recursive else "/*"
         files = []
         for extension in extensions:
-            files.extend(glob.glob(path + additional_pattern + extension, recursive=recursive))
+            files.extend(
+                glob.glob(path + additional_pattern + extension, recursive=recursive)
+            )
 
         if self.verbose:
             logger.info("Finished searching for images. %s images found", len(files))
@@ -118,7 +122,9 @@ class FaceDetector(object):
             predictions[image_path] = self.detect_from_image(image_path)
 
         if self.verbose:
-            logger.info("The detector was successfully run on all %s images", len(files))
+            logger.info(
+                "The detector was successfully run on all %s images", len(files)
+            )
 
         return predictions
 
@@ -145,7 +151,11 @@ class FaceDetector(object):
             return cv2.imread(tensor_or_path) if not rgb else io.imread(tensor_or_path)
         elif torch.is_tensor(tensor_or_path):
             # Call cpu in case its coming from cuda
-            return tensor_or_path.cpu().numpy()[..., ::-1].copy() if not rgb else tensor_or_path.cpu().numpy()
+            return (
+                tensor_or_path.cpu().numpy()[..., ::-1].copy()
+                if not rgb
+                else tensor_or_path.cpu().numpy()
+            )
         elif isinstance(tensor_or_path, np.ndarray):
             return tensor_or_path[..., ::-1].copy() if not rgb else tensor_or_path
         else:

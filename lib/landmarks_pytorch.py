@@ -5,6 +5,7 @@ https://github.com/natanielruiz/deep-head-pose
 The face detector used is SFD (taken from face-alignment FAN) https://github.com/1adrianb/face-alignment
 
 """
+
 from enum import Enum
 from torch.utils.model_zoo import load_url
 from .sfd.sfd_detector import SFDDetector as FaceDetector
@@ -49,6 +50,7 @@ class LandmarksType(Enum):
     _2halfD - this points represent the projection of the 3D points into 3D
     _3D - detect the points ``(x,y,z)``` in a 3D space
     """
+
     _2D = 1
     _2halfD = 2
     _3D = 3
@@ -67,9 +69,9 @@ class NetworkSize(Enum):
 
 
 models_urls = {
-    '2DFAN-4': 'https://www.adrianbulat.com/downloads/python-fan/2DFAN4-11f355bf06.pth.tar',
-    '3DFAN-4': 'https://www.adrianbulat.com/downloads/python-fan/3DFAN4-7835d9f11d.pth.tar',
-    'depth': 'https://www.adrianbulat.com/downloads/python-fan/depth-2a464da4ea.pth.tar',
+    "2DFAN-4": "https://www.adrianbulat.com/downloads/python-fan/2DFAN4-11f355bf06.pth.tar",
+    "3DFAN-4": "https://www.adrianbulat.com/downloads/python-fan/3DFAN4-7835d9f11d.pth.tar",
+    "depth": "https://www.adrianbulat.com/downloads/python-fan/depth-2a464da4ea.pth.tar",
 }
 
 
@@ -97,56 +99,75 @@ def get_preds_fromhm(hm, center=None, scale=None):
             pX, pY = int(preds[i, j, 0]) - 1, int(preds[i, j, 1]) - 1
             if (0 < pX < 63) and (0 < pY < 63):
                 diff = torch.FloatTensor(
-                    [hm_[pY, pX + 1] - hm_[pY, pX - 1],
-                     hm_[pY + 1, pX] - hm_[pY - 1, pX]])
-                preds[i, j].add_(diff.sign_().mul_(.25))
+                    [
+                        hm_[pY, pX + 1] - hm_[pY, pX - 1],
+                        hm_[pY + 1, pX] - hm_[pY - 1, pX],
+                    ]
+                )
+                preds[i, j].add_(diff.sign_().mul_(0.25))
 
-    preds.add_(-.5)
+    preds.add_(-0.5)
 
     preds_orig = torch.zeros(preds.size())
     if center is not None and scale is not None:
         for i in range(hm.size(0)):
             for j in range(hm.size(1)):
                 preds_orig[i, j] = transform(
-                    preds[i, j], center, scale, hm.size(2), True)
+                    preds[i, j], center, scale, hm.size(2), True
+                )
 
     return preds, preds_orig
 
 
 class LandmarksEstimation:
-    def __init__(self, type='3D'):
+    def __init__(self, type="3D"):
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
         # Load all needed models - Face detector and Pose detector
         network_size = NetworkSize.LARGE
         network_size = int(network_size)
-        if type == '3D':
+        if type == "3D":
             self.landmarks_type = LandmarksType._3D
         else:
             self.landmarks_type = LandmarksType._2D
         self.flip_input = False
 
         # SFD face detection
-        path_to_detector = os.path.join(sys.path[0], 'lib/sfd/s3fd-619a316812.pth')
-        self.face_detector = FaceDetector(device='cuda', verbose=False, path_to_detector=path_to_detector)
+        path_to_detector = os.path.join(sys.path[0], "lib/sfd/s3fd-619a316812.pth")
+        self.face_detector = FaceDetector(
+            device="cuda", verbose=False, path_to_detector=path_to_detector
+        )
 
-        self.transformations_image = transforms.Compose([transforms.Resize(224),
-                                                         transforms.CenterCrop(224), transforms.ToTensor(),
-                                                         transforms.Normalize(mean=[0.485, 0.456, 0.406],
-                                                                              std=[0.229, 0.224, 0.225])])
-        self.transformations = transforms.Compose([transforms.Resize(224),
-                                                   transforms.CenterCrop(224),
-                                                   transforms.Normalize(mean=[0.485, 0.456, 0.406],
-                                                                        std=[0.229, 0.224, 0.225])])
+        self.transformations_image = transforms.Compose(
+            [
+                transforms.Resize(224),
+                transforms.CenterCrop(224),
+                transforms.ToTensor(),
+                transforms.Normalize(
+                    mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
+                ),
+            ]
+        )
+        self.transformations = transforms.Compose(
+            [
+                transforms.Resize(224),
+                transforms.CenterCrop(224),
+                transforms.Normalize(
+                    mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
+                ),
+            ]
+        )
 
         # Initialise the face alignment networks
         self.face_alignment_net = FAN(network_size)
         if self.landmarks_type == LandmarksType._2D:
-            network_name = '2DFAN-' + str(network_size)
+            network_name = "2DFAN-" + str(network_size)
         else:
-            network_name = '3DFAN-' + str(network_size)
+            network_name = "3DFAN-" + str(network_size)
 
-        fan_weights = load_url(models_urls[network_name], map_location=lambda storage, loc: storage)
+        fan_weights = load_url(
+            models_urls[network_name], map_location=lambda storage, loc: storage
+        )
         self.face_alignment_net.load_state_dict(fan_weights)
 
         self.face_alignment_net.to(self.device)
@@ -156,8 +177,13 @@ class LandmarksEstimation:
         if self.landmarks_type == LandmarksType._3D:
             self.depth_prediction_net = ResNetDepth()
 
-            depth_weights = load_url(models_urls['depth'], map_location=lambda storage, loc: storage)
-            depth_dict = {k.replace('module.', ''): v for k, v in depth_weights['state_dict'].items()}
+            depth_weights = load_url(
+                models_urls["depth"], map_location=lambda storage, loc: storage
+            )
+            depth_dict = {
+                k.replace("module.", ""): v
+                for k, v in depth_weights["state_dict"].items()
+            }
             self.depth_prediction_net.load_state_dict(depth_dict)
 
             self.depth_prediction_net.to(self.device)
@@ -165,19 +191,22 @@ class LandmarksEstimation:
 
     def find_landmarks(self, face, image):
         center = torch.FloatTensor(
-            [(face[2] + face[0]) / 2.0,
-             (face[3] + face[1]) / 2.0])
+            [(face[2] + face[0]) / 2.0, (face[3] + face[1]) / 2.0]
+        )
 
         center[1] = center[1] - (face[3] - face[1]) * 0.12
-        scale = (face[2] - face[0] + face[3] - face[1]) / self.face_detector.reference_scale
+        scale = (
+            face[2] - face[0] + face[3] - face[1]
+        ) / self.face_detector.reference_scale
 
         inp = crop_torch(image.unsqueeze(0), center, scale).float().cuda()
         inp = inp.div(255.0)
         out = self.face_alignment_net(inp)[-1]
 
         if self.flip_input:
-            out = out + flip(self.face_alignment_net(flip(inp))
-                             [-1], is_label=True)  # patched inp_batch undefined variable error
+            out = out + flip(
+                self.face_alignment_net(flip(inp))[-1], is_label=True
+            )  # patched inp_batch undefined variable error
         out = out.cpu()
 
         pts, pts_img = get_preds_fromhm(out, center, scale)
@@ -189,8 +218,7 @@ class LandmarksEstimation:
             heatmaps = torch.zeros((68, 256, 256), dtype=torch.float32)
             for i in range(68):
                 if pts[i, 0] > 0:
-                    heatmaps[i] = draw_gaussian(
-                        heatmaps[i], pts[i], 2)
+                    heatmaps[i] = draw_gaussian(heatmaps[i], pts[i], 2)
 
             heatmaps = heatmaps.unsqueeze(0)
             heatmaps = heatmaps.to(self.device)
@@ -198,9 +226,13 @@ class LandmarksEstimation:
                 print(inp.shape)
                 print(heatmaps.shape)
 
-            depth_pred = self.depth_prediciton_net(torch.cat((inp, heatmaps), 1)).view(68, 1)
+            depth_pred = self.depth_prediciton_net(torch.cat((inp, heatmaps), 1)).view(
+                68, 1
+            )
             pts_img = pts_img.cuda()
-            pts_img = torch.cat((pts_img, depth_pred * (1.0 / (256.0 / (200.0 * scale)))), 1)
+            pts_img = torch.cat(
+                (pts_img, depth_pred * (1.0 / (256.0 / (200.0 * scale)))), 1
+            )
 
         else:
             pts, pts_img = pts.view(-1, 68, 2) * 4, pts_img.view(-1, 68, 2)
@@ -211,9 +243,13 @@ class LandmarksEstimation:
         image_tensor = torch.tensor(np.transpose(image, (2, 0, 1))).float().cuda()
         if len(image_tensor.shape) == 3:
             image_tensor = image_tensor.unsqueeze(0).cuda()
-            detected_faces, error, error_index = self.face_detector.detect_from_batch(image_tensor)
+            detected_faces, error, error_index = self.face_detector.detect_from_batch(
+                image_tensor
+            )
         else:
-            detected_faces, error, error_index = self.face_detector.detect_from_batch(image_tensor)
+            detected_faces, error, error_index = self.face_detector.detect_from_batch(
+                image_tensor
+            )
 
         if len(detected_faces[0]) == 0:
             return image
@@ -270,9 +306,13 @@ class LandmarksEstimation:
         if detected_faces is None:
             if len(image.shape) == 3:
                 image = image.unsqueeze(0).cuda()
-                detected_faces, error, error_index = self.face_detector.detect_from_batch(image)
+                detected_faces, error, error_index = (
+                    self.face_detector.detect_from_batch(image)
+                )
             else:
-                detected_faces, error, error_index = self.face_detector.detect_from_batch(image)
+                detected_faces, error, error_index = (
+                    self.face_detector.detect_from_batch(image)
+                )
 
         batch = 0
         num_faces = 0
