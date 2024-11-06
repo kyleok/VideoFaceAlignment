@@ -76,18 +76,37 @@ def transform(point, center, scale, resolution, invert=False):
 	Keyword Arguments:
 		invert {bool} -- define wherever the function should produce the direct or the
 		inverse transformation matrix (default: {False})
+
+	UPDATED:
+	fix: resolve type mismatch in fan_model transform function
+
+	- Fix TypeError when assigning numpy.float32 to torch.FloatTensor in transform()
+	- Convert resolution/h calculations to torch tensors before assignment
+	- Ensures consistent tensor types throughout the transformation matrix creation
+
+	Error: "TypeError: can't assign a numpy.float32 to a torch.FloatTensor"
 	"""
 
-	_pt = torch.ones(3)
-	_pt[0] = point[0]
-	_pt[1] = point[1]
-
-	h = 200.0 * scale
-	t = torch.eye(3)
-	t[0, 0] = resolution / h
-	t[1, 1] = resolution / h
-	t[0, 2] = resolution * (-center[0] / h + 0.5)
-	t[1, 2] = resolution * (-center[1] / h + 0.5)
+	# Convert all inputs to torch tensors if they aren't already
+	_pt = torch.tensor(point).float()
+	_center = torch.tensor(center).float()
+	_scale = float(scale)
+	
+	# Convert point to homogeneous coordinates by adding 1 as third coordinate
+	_pt = torch.cat([_pt, torch.ones(1)])
+	
+	# Create transformation matrix
+	t = torch.zeros(3, 3)
+	
+	# Calculate h based on scale
+	h = _scale * 200.0
+	
+	# Fix the type mismatch by converting resolution/h to a torch float
+	t[0, 0] = torch.tensor(resolution / h).float()
+	t[1, 1] = torch.tensor(resolution / h).float()
+	t[0, 2] = resolution * (-_center[0] / h + 0.5)
+	t[1, 2] = resolution * (-_center[1] / h + 0.5)
+	t[2, 2] = 1
 
 	if invert:
 		t = torch.inverse(t)
