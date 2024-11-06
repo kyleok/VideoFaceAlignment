@@ -1,22 +1,23 @@
-# FFHQFaceAlignment
+# FFHQFaceAlignment with Video Support
 
-This is an auxiliary repo for aligning and cropping faces given in arbitrary input images in order to obtain face images similar to ones provided in the FFHQ dataset. Note that only single faces will be cropped from each input image. The cropped face images may subsequently be used for StyleGAN training or for StyleGAN inversion tasks (e.g., using [HyperStyle](https://github.com/yuval-alaluf/hyperstyle)). For detecting the face in each input image we use the S³FD [1] face detector and for aligning the face we use the landmark estimation method proposed in [2]. A few examples are shown in the figure below.
+This repository is forked from [@chi0tzp/FFHQFaceAlignment](https://github.com/chi0tzp/FFHQFaceAlignment) with added video processing capabilities and minor code optimizations. The tool allows for FFHQ-style face alignment for both images and videos.
 
-<p align="center">
-<img src="examples.svg" style="width: 17vw"/>
-</p>
-
-
+## Features
+- Original image-to-image face alignment
+- New video-to-video face alignment
+- Batch video processing support
 
 ## Installation
 
-We recommend installing the required packages using python's native virtual environment. For Python 3.4+, this can be done as follows:
+This project has been tested with Python 3.10. Please ensure you have Conda installed before proceeding.
 
 ```bash
-$ python -m venv ffhqfacealignment-venv
-$ source ffhqfacealignment-venv/bin/activate
-(ffhqfacealignment-venv) $ pip install --upgrade pip
-(ffhqfacealignment-venv) $ pip install -r requirements.txt
+# Create and activate conda environment
+conda create -n ffhqfacealignment python==3.10
+conda activate ffhqfacealignment
+
+# Install PyTorch (adjust URL based on your CUDA version)
+pip3 install torch torchvision --index-url https://download.pytorch.org/whl/cu118
 ```
 
 
@@ -26,29 +27,31 @@ $ source ffhqfacealignment-venv/bin/activate
 First, you need to download the pretrained SFD [1] model using
 
 ```bash
-(ffhqfacealignment-venv) $ python download.py
+python download.py
 ```
 
-This will download and store under `lib/sfd` a pretrained model, which can also be found [here](https://drive.google.com/file/d/1IWqJUTAZCelAZrUzfU38zK_ZM25fK32S/view?usp=sharing). Then, you can use `align.py` in order to align and crop faces from a set of images under a given directory. Cropped images will be stored (using the same filename) under a given output directory (if given) in a given resolution (256x256 by default) -- for more details run `python align.py -h`:
+Pretrained model download, same from [@chi0tzp/FFHQFaceAlignment](https://github.com/chi0tzp/FFHQFaceAlignment)
 
 ```bash
-(ffhqfacealignment-venv) $ python align.py --input-dir=<directory of original images> --output-dir=<directory of cropped images> --size=<cropped image resolution>
+python align.py --input-dir=<directory of original images> --output-dir=<directory of cropped images> --size=<cropped image resolution>
 ```
-
-For example,
+same from [@chi0tzp/FFHQFaceAlignment](https://github.com/chi0tzp/FFHQFaceAlignment)
 
 ```bash
-(ffhqfacealignment-venv) $ python align.py --input-dir=demo_images
+python align_video.py --input path/to/input.mp4 --output path/to/output.mp4 --size 256
 ```
+converts single video to cropped and aligned video
 
-will align and crop the faces of images in `demo_images/` and store the results (i.e., 256x256 aligned face images) under `demo_images_aligned/`.
-
-
+```bash
+python align_video_dir.py --input path/to/source_dir --size 256
+```
+converts batch of videos in a dir. output follows same dir structure of source dir.
 
 ## Credits
 
  - [Face Detector [1]](https://github.com/sfzhang15/SFD) 
  - [Face alignment [2]](https://github.com/1adrianb/face-alignment)
+ - [@chi0tzp/FFHQFaceAlignment](https://github.com/chi0tzp/FFHQFaceAlignment)
 
 
 
