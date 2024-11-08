@@ -25,10 +25,9 @@ pip3 install -r requirements.txt
 
 ## Usage
 
-First, you need to download the pretrained SFD [1] model using
 
 ```bash
-# Download pretrained model, same as original repo
+# First, you need to download the pretrained SFD [1] model using
 python download.py
 ```
 
