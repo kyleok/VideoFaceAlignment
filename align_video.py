@@ -8,13 +8,14 @@ from tqdm import tqdm
 from lib.landmarks_pytorch import LandmarksEstimation
 from align import align_crop_image
 
-def process_video(input_path, output_path, transform_size=256):
+def process_video(input_path, output_path, transform_size=256, tight_crop=False):
     """Process a video file, detecting and aligning faces in each frame.
     
     Args:
         input_path (str): Path to input video file
         output_path (str): Path to save processed video
         transform_size (int): Size of output frames
+        tight_crop (bool): Enable tighter face cropping
     """
     # Open video capture
     cap = cv2.VideoCapture(input_path)
@@ -56,7 +57,8 @@ def process_video(input_path, output_path, transform_size=256):
                 processed_frame = align_crop_image(
                     image=frame_rgb,
                     landmarks=np.asarray(landmarks[0].detach().cpu().numpy()),
-                    transform_size=transform_size
+                    transform_size=transform_size,
+                    tight_crop=tight_crop
                 )
             else:
                 # If no face detected, create blank frame or skip
@@ -78,6 +80,7 @@ def main():
     parser.add_argument(
         "--size", type=int, default=256, help="set output size of cropped frames"
     )
+    parser.add_argument('--tight-crop', action='store_true', help='enable tighter face cropping')
     args = parser.parse_args()
 
     # Get input path
@@ -95,11 +98,11 @@ def main():
     print(f"#. Output will be saved to: {output_path}")
 
     try:
-        process_video(input_path, output_path, args.size)
+        process_video(input_path, output_path, args.size, args.tight_crop)
         print("#. Processing complete!")
     except Exception as e:
         print(f"#. Error occurred: {str(e)}")
 
 if __name__ == "__main__":
     main()
-    # python align_video.py --input path/to/input.mp4 --size 256
+    # python align_video.py --input path/to/input.mp4 --size 256 --tight-crop

@@ -8,13 +8,14 @@ import gc
 import torch  # Add this import at the top
 
 
-def process_directory(input_dir, output_dir, transform_size=256):
+def process_directory(input_dir, output_dir, transform_size=256, tight_crop=False):
     """Process all videos in a directory and its subdirectories.
 
     Args:
         input_dir (str): Path to input directory
         output_dir (str): Path to output directory
         transform_size (int): Size of output frames
+        tight_crop (bool): Enable tighter face cropping
     """
     # Create output directory if it doesn't exist
     if not osp.exists(output_dir):
@@ -51,7 +52,7 @@ def process_directory(input_dir, output_dir, transform_size=256):
                 print(f"#. Output will be saved to: {output_path}")
 
                 try:
-                    process_video(input_path, output_path, transform_size)
+                    process_video(input_path, output_path, transform_size, tight_crop)
                     logging.info(f"Successfully processed: {input_path}")
 
                     # Clear CUDA cache and run garbage collection
@@ -86,6 +87,7 @@ def main():
     parser.add_argument(
         "--size", type=int, default=256, help="set output size of cropped image"
     )
+    parser.add_argument('--tight-crop', action='store_true', help='enable tighter face cropping')
     args = parser.parse_args()
 
     # Get input path
@@ -102,7 +104,7 @@ def main():
     print(f"#. Output directory: {output_path}")
 
     try:
-        process_directory(input_path, output_path, args.size)
+        process_directory(input_path, output_path, args.size, args.tight_crop)
         print("#. Processing complete! Check log file for details.")
     except Exception as e:
         print(f"#. Critical error occurred: {str(e)}")
