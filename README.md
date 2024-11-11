@@ -39,13 +39,15 @@ python align.py --input-dir=<directory of original images> --output-dir=<directo
 ```
 
 ```bash
-# Converts single video to cropped and aligned video
-python align_video.py --input path/to/input.mp4 --output path/to/output.mp4 --size 256
+# Process single video - outputs to same directory with "processed_" prefix
+python align_video.py --input path/to/input.mp4 --size 256
+# Output will be saved as: path/to/processed_input.mp4
 ```
 
 ```bash
-# Converts batch of videos in a dir. output dir follows same subdir structure of source dir.
+# Process batch of videos in a directory - maintains directory structure
 python align_video_dir.py --input path/to/source_dir --size 256
+# Creates a new directory: path/to/processed_source_dir/
 ```
 
 ## Credits
