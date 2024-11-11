@@ -14,7 +14,7 @@ from lib.landmarks_pytorch import LandmarksEstimation
 IMAGE_EXT = (".jpg", ".jpeg", ".png")
 
 
-def align_crop_image(image, landmarks, transform_size=256):
+def align_crop_image(image, landmarks, transform_size=256, tight_crop=False):
     # Get estimated landmarks
     lm = landmarks
     lm_chin = lm[0:17]  # left-right
@@ -38,11 +38,21 @@ def align_crop_image(image, landmarks, transform_size=256):
     eye_to_mouth = mouth_avg - eye_avg
 
     # Choose oriented crop rectangle
-    x = eye_to_eye - np.flipud(eye_to_mouth) * [-1, 1]
-    x /= np.hypot(*x)
-    x *= max(np.hypot(*eye_to_eye) * 2.0, np.hypot(*eye_to_mouth) * 1.8)
-    y = np.flipud(x) * [-1, 1]
-    c = eye_avg + eye_to_mouth * 0.1
+    if tight_crop:
+        # Tighter crop focusing on inner face
+        x = eye_to_eye - np.flipud(eye_to_mouth) * [-1, 1]
+        x /= np.hypot(*x)
+        x *= max(np.hypot(*eye_to_eye) * 0.8, np.hypot(*eye_to_mouth) * 0.8)  # Reduced scaling factors
+        y = np.flipud(x) * [-1, 1]
+        c = eye_avg + eye_to_mouth * 0.1
+    else:
+        # Original wider crop
+        x = eye_to_eye - np.flipud(eye_to_mouth) * [-1, 1]
+        x /= np.hypot(*x)
+        x *= max(np.hypot(*eye_to_eye) * 2.0, np.hypot(*eye_to_mouth) * 1.8)
+        y = np.flipud(x) * [-1, 1]
+        c = eye_avg + eye_to_mouth * 0.1
+
     quad = np.stack([c - x - y, c - x + y, c + x + y, c + x - y])
     qsize = np.hypot(*x) * 2
 
@@ -147,6 +157,7 @@ def main():
     parser.add_argument(
         "--size", type=int, default=256, help="set output size of cropped image"
     )
+    parser.add_argument('--tight-crop', action='store_true', help='enable tighter face cropping')
     args = parser.parse_args()
 
     # Get input/output directories
@@ -191,6 +202,7 @@ def main():
                 image=img,
                 landmarks=np.asarray(landmarks[0].detach().cpu().numpy()),
                 transform_size=args.size,
+                tight_crop=args.tight_crop
             )
         else:
             print("#. Warning: No landmarks found in {}".format(img_file))
